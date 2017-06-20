@@ -57,32 +57,50 @@ def get_time_of_post_recent(page_id, access_token, num_statuses):
 def get_most_recent():
 	print "Waiting till a new post occurs"
 
-	#Post object (most recent post)
-	post = get_time_of_post_recent(page_id, access_token, 1)["data"][0]
-	#print json.dumps(post, indent=4, sort_keys=True)
-	post_json = json.dumps(post)
-	post_json = json.loads(post_json)
+	done = True
+	post_id = None
 
-	#Get current Date object to compare to Facebook post (in UTC)
-	utc_now = datetime.utcnow()
-	utc_now.strftime('%Y-%m-%dT%H:%M:%S+0000')
+	while done:
+		#Post object (most recent post)
+		post = get_time_of_post_recent(page_id, access_token, 1)["data"][0]
+		#print json.dumps(post, indent=4, sort_keys=True)
+		post_json = json.dumps(post)
+		#print post_json
+		post_json = json.loads(post_json)
 
-	#Time in UTC
-	post_time = post_json['created_time']
-	status_published = datetime.strptime(post_time,'%Y-%m-%dT%H:%M:%S+0000')
-	#status_published.split(" ")
+		#Get current Date object to compare to Facebook post (in UTC)
+		utc_now = datetime.utcnow()
+		utc_now.strftime('%Y-%m-%dT%H:%M:%S+0000')
 
-	print status_published
-	print utc_now
+		#Time in UTC
+		post_time = post_json['created_time']
+		status_published = datetime.strptime(post_time,'%Y-%m-%dT%H:%M:%S+0000')
+		#status_published.split(" ")
 
-	#post_date = status_published[1]
-	#utc_date = utc_now[1]
+		#ID for post to be used for analyzing
+		post_id = post_json['id']
+		print post_id
 
-	#Time difference
-	tdelta = utc_now - status_published
-	print tdelta
-	
-	#Check first to see if it's on the same day
+		print status_published
+		print utc_now
+
+		#post_date = status_published[1]
+		#utc_date = utc_now[1]
+
+		#Time difference
+		tdelta = utc_now - status_published
+		tdelat_min = tdelta.seconds/60
+		print tdelta
+
+		#Check first to see if it's on the same day
+		
+		if tdelat_min > 0 and tdelat_min < 5:
+			print "Got one!"
+			done = False
+			return post_id
+
+		done = False
+
 	
 	
 
