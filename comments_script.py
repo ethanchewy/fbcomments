@@ -3,13 +3,13 @@
 #Tracks who likes the top 3 comments 
 #Records every 10 minutes
 #Outputs all data in a spreadsheet syntax
-
-import urllib2
-import json
-import datetime
 import csv
-import time
+import sys
 from datetime import datetime
+import json
+import time
+import sched
+import urllib2
 
 app_id = "1603715373026421"
 
@@ -40,6 +40,22 @@ def request_until_succeed(url):
 
     return response.read()
 
+def createFile():
+	dateName = time.strftime("%c") + '.txt'
+	dateName = dateName.replace(" ", "_")
+	print dateName
+
+	try:
+		file = open(dateName,'w')   # Trying to create a new file or open one
+		file.close();
+		return dateName
+
+	except:
+		print('Something went wrong! Can\'t tell what?')
+		sys.exit(0)
+
+    
+
 #Gets time of the post
 def get_time_of_post_recent(page_id, access_token, num_statuses):
 	 # construct the URL string
@@ -59,6 +75,7 @@ def get_most_recent():
 
 	done = True
 	post_id = None
+	s = sched.scheduler(time.time, time.sleep)
 
 	while done:
 		#Post object (most recent post)
@@ -79,6 +96,8 @@ def get_most_recent():
 
 		#ID for post to be used for analyzing
 		post_id = post_json['id']
+		#process id
+		post_id = post_id.split("_", 1)[1]
 		print post_id
 
 		print status_published
@@ -92,33 +111,69 @@ def get_most_recent():
 		tdelat_min = tdelta.seconds/60
 		print tdelta
 
-		#Check first to see if it's on the same day
-		
+		#Check first to see if it's on the same day and within 5 mintues of publishing. 
+		#We want to get a post as early as possible
 		if tdelat_min > 0 and tdelat_min < 5:
 			print "Got one!"
 			done = False
-			return post_id
+			# return post_id
 
-		done = False
+		# done = False
+		#Waits for 5 minutes, saves some time
+		# time.sleep(60*5) UNCOMMENT LATER ON
+		return post_id #COMMENT OUT AFTER SAVING
 
-	
-	
+	#returns the whole json object
+	return post_id
 
-	return
+#Process the whole comment to put some neat data points
+def process_comment(comment_id):
+	comment_id = comment_id.split("_", 1)[1]
+	return comment_id
+def get_top_comments(status_id, access_token, num_comments):
 
-#Gets top 3 comments
-def get_top_comments(post_id):
-	return
-#Gets all reactions
-def get_reactions(comment_id):
-	return
+    # Construct the URL string
+    base = "https://graph.facebook.com"
+    node = "/%s/comments" % status_id 
+    fields = "?fields=id"
+    parameters = "&limit=%s?access_token=%s" % (num_comments, access_token)
+    url = base + node + fields + parameters 
+    #fields +
+    # retrieve data
+    data = request_until_succeed(url)
+    if data is None:
+        return None
+    else:   
+        return json.loads(data)
+
+#Gets all reactions 
+#Returns number of reactions for each type
+# def get_reactions(comment_id):
+# 	#convert id to something that the graph api can understand
+# 	comment_id = comment_id.split("_", 1)[1]
+
+# 	return comment_id
 #Gets person's id
 def person(reaction_id):
 	return
 def run_everything():
 	#Get's url of Facebook page
-	page_id = raw_input("Enter a page_id: ")
-	get_most_recent(page_id)
+	#Set page id manually in line 19
+	fileName = createFile()
+	print fileName
+	post_id = get_most_recent()
+	num_comments = 3
+	topComments = get_top_comments(post_id, access_token, num_comments)["data"]
+	print topComments
+
+	#FIGURE OUT HOW TO GET ID
+	#for loop to analyze each comment
+	for x in xrange(num_comments):
+	 	process_comment(topComments["id"])
+
+	#postJSON = json.dumps(get_most_recent())
+	with open(fileName, "a") as myfile:
+		myfile.write(topComments)
 	return
 
-get_most_recent();
+run_everything();
